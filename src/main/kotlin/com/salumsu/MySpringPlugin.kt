@@ -18,7 +18,7 @@ class MySpringPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register("makeModel", MakeEntity::class.java) {
+        project.tasks.register("makeEntity", MakeEntity::class.java) {
             this.extension = extension
         }
 

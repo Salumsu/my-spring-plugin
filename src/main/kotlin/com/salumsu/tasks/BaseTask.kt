@@ -17,7 +17,7 @@ abstract class BaseTask : DefaultTask() {
     @get:Internal
     lateinit var extension: MySpringPluginExtension
 
-    @get:Option(option = "path", description = "Overrides default entity path")
+    @get:Option(option = "path", description = "Overrides default class path")
     @get:Input
     @get:Optional
     abstract val subPath: Property<String>
@@ -51,6 +51,8 @@ abstract class BaseTask : DefaultTask() {
             println("Skipping ${file.name}, already exists. Pass --overwrite to overwrite.")
             return null;
         }
+
+        file.createNewFile();
 
         return file;
     }

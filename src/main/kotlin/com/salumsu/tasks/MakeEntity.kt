@@ -1,5 +1,7 @@
 package com.salumsu.tasks
 
+import com.salumsu.lib.AccessModifier
+import com.salumsu.lib.template
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.options.Option
@@ -17,27 +19,29 @@ abstract class MakeEntity : BaseTask() {
     @TaskAction
     fun generate() {
         val packageName = getPackageName(extension.entityPath)
+        val templateProcessor = template(packageName, entityName.get(), extension.mainJavaSrcDir) {
+            import("jakarta.persistence") {
+                item("Entity")
+                item("Id")
+                item("GeneratedValue")
+                item("GenerationType")
+            }
+            annotate("Entity")
+            field("Long", "id") {
+                access(AccessModifier.PRIVATE)
+                annotate("Id")
+                annotate("GeneratedValue") {
+                    param("strategy", "GenerationType.IDENTITY")
+                }
+            }
+        }
 
-        val file = getFile(packageName, entityName.get()) ?: return
+        var file = templateProcessor.getFile()
+        if (file.exists() && !overwrite.getOrElse(false)) {
+            println("Skipping ${file.name}, already exists. Pass --overwrite to overwrite.")
+            return;
+        }
 
-        val lombokImports = if (lombok.getOrElse(false)) "import lombok.Getter;\nimport lombok.Setter;" else ""
-        val lombokAnnotations = if (lombok.getOrElse(false)) "@Getter\n@Setter" else ""
-        file.writeText("""
-            |package $packageName;
-            |
-            |import jakarta.persistence.Entity;
-            |import jakarta.persistence.Id;
-            |import jakarta.persistence.GeneratedValue;
-            |import jakarta.persistence.GenerationType;
-            |$lombokImports
-            |
-            |$lombokAnnotations
-            |@Entity
-            |public class ${entityName.get()} {
-            |    @Id
-            |    @GeneratedValue(strategy = GenerationType.IDENTITY)
-            |    private Long id;
-            |}
-        """.trimMargin())
+        templateProcessor.writeToFile(file)
     }
 }
