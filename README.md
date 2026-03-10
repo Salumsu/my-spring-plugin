@@ -126,9 +126,9 @@ Given `basePackage = "com.example.myapp"`:
 
 ```bash
 ./gradlew makeEntity --name=User --lombok=true
-./gradlew makeRepository --name=User --model=entity.User
-./gradlew makeService --name=User --lombok=true --repository=repositories.UserRepository
-./gradlew makeController --name=User --lombok=true --service=services.UserService --endpoint=/users
+./gradlew makeRepository --name=UserRepository --model=entity.User
+./gradlew makeService --name=UserService --lombok=true --repository=repositories.UserRepository
+./gradlew makeController --name=UserController --lombok=true --service=services.UserService --endpoint=/users
 ```
 
 Generates:
