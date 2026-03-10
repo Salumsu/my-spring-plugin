@@ -1,5 +1,7 @@
 package com.salumsu.tasks
 
+import com.salumsu.classDefinition.AccessModifier
+import com.salumsu.lib.template
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
@@ -24,33 +26,31 @@ abstract class MakeService : BaseTask() {
     @TaskAction
     fun generate() {
         val packageName = getPackageName(extension.servicePath)
-
-        val file = getFile(packageName, serviceName.get()) ?: return
-
-        val annotations = buildList {
-            add("@Service")
-            if (lombok.getOrElse(false)) add("@RequiredArgsConstructor")
-        }.joinToString("\n")
-
         val isRepositoryPresent = repositoryInterface.getOrElse("") != ""
-        val repositoryClass = if (isRepositoryPresent) getClassName(repositoryInterface.get()) else ""
-        val imports = buildList {
-            add("import org.springframework.stereotype.Service;")
-            if (isRepositoryPresent) add("import ${extension.basePackage}.${repositoryInterface.get()};")
-            if (lombok.getOrElse(false)) add("import lombok.RequiredArgsConstructor;")
-        }.joinToString("\n")
+        val templateProcessor = template(packageName, extension.mainJavaSrcDir) {
+            import("org.springframework.stereotype.Service")
+            if (isRepositoryPresent) {
+                import("${extension.basePackage}.${repositoryInterface.get()}")
+            }
+            if (lombok.getOrElse(false)) {
+                import("lombok.RequiredArgsConstructor")
+            }
 
-        val repositoryVal = if (isRepositoryPresent) "private final $repositoryClass ${variabelize(repositoryClass)};" else ""
+            classDef(serviceName.get()) {
+                annotate("Service")
+                if (lombok.getOrElse(false)) {
+                    annotate("RequiredArgsConstructor")
+                }
 
-        file.writeText("""
-            |package $packageName;
-            |
-            |$imports
-            |
-            |$annotations
-            |public class ${serviceName.get()} {
-            |   $repositoryVal
-            |}
-        """.trimMargin())
+                field(
+                    getClassName(repositoryInterface.get()),
+                    getClassName(variabelize(repositoryInterface.get()))) {
+                    access(AccessModifier.PRIVATE)
+                    isFinal()
+                }
+            }
+        }
+
+        createFile(templateProcessor)
     }
 }

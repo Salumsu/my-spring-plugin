@@ -1,17 +1,14 @@
-package com.salumsu.lib
+package com.salumsu.classDefinition
 
-enum class AccessModifier {
-    PRIVATE,
-    PROTECTED,
-    PUBLIC,
-}
 
 class ClassFieldBuilder(
     private val type: String,
     private val name: String,
 ) {
-    var accessModifier: AccessModifier = AccessModifier.PUBLIC
-    var isStatic: Boolean = false
+    private var accessModifier: AccessModifier = AccessModifier.PUBLIC
+    private var isStatic: Boolean = false
+    private var final: Boolean = false
+
     private val annotations = mutableListOf<Annotation>()
 
     fun static() { isStatic = true }
@@ -22,7 +19,11 @@ class ClassFieldBuilder(
         annotations.add(annotation(name, block))
     }
 
-    fun build() = ClassField(type, name, accessModifier, isStatic, annotations)
+    fun isFinal() {
+        final = true
+    }
+
+    fun build() = ClassField(type, name, accessModifier, isStatic, annotations, final)
 }
 
 
@@ -32,23 +33,35 @@ class ClassField (
     var accessModifier: AccessModifier = AccessModifier.PUBLIC,
     var isStatic: Boolean = false,
     var annotations: MutableList<Annotation> = mutableListOf(),
+    var final: Boolean = false,
 ){
+    var indent: Int = 0;
+
+    fun setIndent(indent: Int): ClassField {
+        this.indent = indent
+        return this
+    }
+
     override fun toString(): String {
         var result = ""
 
         if (annotations.isNotEmpty()) {
-            result += annotations.joinToString("\n") { "|    $it" } + "\n"
+            result += annotations.joinToString("\n") { "$it" } + "\n"
         }
 
-        result += "|    " + accessModifier.toString().lowercase()
+        result += "$accessModifier"
 
         if (isStatic) {
             result += " static"
         }
 
+        if (final) {
+            result += " final"
+        }
+
         result += " $type $name;"
 
-        return result
+        return result.prependIndent("\t".repeat(indent))
     }
 }
 

@@ -1,4 +1,4 @@
-package com.salumsu.lib
+package com.salumsu.classDefinition
 
 class ImportBuilder (private val basePackage: String) {
     private val items = mutableListOf<String>()

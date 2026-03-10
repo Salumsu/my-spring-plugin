@@ -1,4 +1,4 @@
-package com.salumsu.lib
+package com.salumsu.classDefinition
 
 class AnnotationParam (
     var name: String,

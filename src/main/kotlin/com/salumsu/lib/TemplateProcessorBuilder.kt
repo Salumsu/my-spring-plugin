@@ -1,46 +1,42 @@
 package com.salumsu.lib
 
+import com.salumsu.classDefinition.AccessModifier
+import com.salumsu.classDefinition.Annotation
+import com.salumsu.classDefinition.AnnotationBuilder
+import com.salumsu.classDefinition.ClassBuilder
+import com.salumsu.classDefinition.ClassDefinition
+import com.salumsu.classDefinition.ClassField
+import com.salumsu.classDefinition.ClassFieldBuilder
+import com.salumsu.classDefinition.Import
+import com.salumsu.classDefinition.ImportBuilder
+import com.salumsu.classDefinition.annotation
+import com.salumsu.classDefinition.buildClass
+import com.salumsu.classDefinition.classField
+import com.salumsu.classDefinition.importPackage
 import java.io.File
 
 class TemplateProcessorBuilder (
     private val packageName: String,
-    private val className: String,
     private val mainJavaSrcDir: File,
 ) {
-    private var isClass: Boolean = true
-    private var extending: String? = null
-    private val implementing: MutableList<String> = mutableListOf()
     private val imports: MutableList<Import> = mutableListOf()
-    private val annotations: MutableList<Annotation> = mutableListOf()
-    private val fields: MutableList<ClassField> = mutableListOf()
-
-    fun isInterface() {
-        isClass = false
-    }
-
-    fun extend(className: String) {
-        extending = className
-    }
-
-    fun implement(className: String) {
-        implementing.add(className)
-    }
+    private var classDefinition: ClassDefinition? = null;
 
     fun import(packageName: String, block: ImportBuilder.() -> Unit = {}) {
         imports.add(importPackage(packageName, block))
     }
 
-    fun annotate(name: String, block: AnnotationBuilder.() -> Unit = {}) {
-        annotations.add(annotation(name, block))
+    fun classDef(name: String, accessModifier: AccessModifier = AccessModifier.PUBLIC, block: ClassBuilder.() -> Unit = {}): ClassDefinition {
+        classDefinition = buildClass(name, accessModifier, block)
+        return classDefinition!!
     }
 
-    fun field(type: String, name: String, block: ClassFieldBuilder.() -> Unit = {}) {
-        fields.add(classField(type, name, block))
+    fun build(): TemplateProcessor {
+        requireNotNull(classDefinition) { "classDefinition must be defined" }
+        return TemplateProcessor(packageName, mainJavaSrcDir, classDefinition!!, imports)
     }
-
-    fun build() = TemplateProcessor(packageName, className, mainJavaSrcDir, isClass, extending, implementing, imports, annotations, fields)
 }
 
-fun template(packageName: String, className: String, mainJavaSrcDir: File, block: TemplateProcessorBuilder.() -> Unit = {}): TemplateProcessor {
-    return TemplateProcessorBuilder(packageName, className, mainJavaSrcDir).apply(block).build()
+fun template(packageName: String, mainJavaSrcDir: File, block: TemplateProcessorBuilder.() -> Unit = {}): TemplateProcessor {
+    return TemplateProcessorBuilder(packageName, mainJavaSrcDir).apply(block).build()
 }

@@ -1,5 +1,7 @@
 package com.salumsu.tasks
 
+import com.salumsu.classDefinition.AccessModifier
+import com.salumsu.lib.template
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
@@ -9,7 +11,7 @@ import org.gradle.api.tasks.options.Option
 abstract class MakeController : BaseTask() {
     @get:Option(option = "name", description = "Name of the service to generate")
     @get:Input
-    abstract val serviceName: Property<String>
+    abstract val controllerName: Property<String>
 
     @get:Option(option = "lombok", description = "Add Lombok annotations")
     @get:Input
@@ -29,34 +31,34 @@ abstract class MakeController : BaseTask() {
     @TaskAction
     fun generate() {
         val packageName = getPackageName(extension.controllerPath)
-
-        val file = getFile(packageName, serviceName.get()) ?: return
-
-        val annotations = buildList {
-            add("@RestController")
-            if (lombok.getOrElse(false)) add("@RequiredArgsConstructor")
-            if (endpoint.getOrElse("") != "") add("@RequestMapping(\"${endpoint.get()}\")")
-        }.joinToString("\n")
-
         val isServiceClassPresent = serviceClass.getOrElse("") != "";
-        val serviceClass = if (isServiceClassPresent) getClassName(serviceClass.get()) else ""
-        val imports = buildList {
-            add("import org.springframework.web.bind.annotation.*;")
-            if (isServiceClassPresent) add("import ${extension.basePackage}.${serviceClass};")
-            if (lombok.getOrElse(false)) add("import lombok.RequiredArgsConstructor;")
-        }.joinToString("\n")
+        val templateProcessor = template(packageName, extension.mainJavaSrcDir) {
+            import("org.springframework.web.bind.annotation.*")
+            if (isServiceClassPresent) {
+                import("${extension.basePackage}.${serviceClass.get()}")
+            }
+            if (lombok.getOrElse(false)) {
+                import("lombok.RequiredArgsConstructor")
+            }
 
-        val serviceVal = if (isServiceClassPresent) "private final $serviceClass ${variabelize(serviceClass)};" else ""
+            classDef(controllerName.get()) {
+                annotate("RestController")
+                if (lombok.getOrElse(false)) {
+                    annotate("RequiredArgsConstructor")
+                }
+                if (endpoint.getOrElse("") != "") {
+                    annotate("RequestMapping(\"${endpoint.get()}\")")
+                }
 
-        file.writeText("""
-            |package $packageName;
-            |
-            |$imports
-            |
-            |$annotations
-            |public class ${serviceName.get()} {
-            |   $serviceVal
-            |}
-        """.trimMargin())
+                field(
+                    getClassName(serviceClass.get()),
+                    getClassName(variabelize(serviceClass.get()))) {
+                    access(AccessModifier.PRIVATE)
+                    isFinal()
+                }
+            }
+        }
+
+        createFile(templateProcessor)
     }
 }

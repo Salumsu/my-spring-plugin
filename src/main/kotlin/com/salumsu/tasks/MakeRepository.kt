@@ -1,5 +1,7 @@
 package com.salumsu.tasks
 
+import com.salumsu.classDefinition.AccessModifier
+import com.salumsu.lib.template
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
@@ -24,18 +26,26 @@ abstract class MakeRepository : BaseTask() {
     fun generate() {
         val packageName = getPackageName(extension.repositoryPath)
 
-        val file = getFile(packageName, repositoryName.get()) ?: return
-        val modelImport = "import ${extension.basePackage}.${modelClassPath.get()};"
-        val modelClass = getClassName(modelClassPath.get())
-        val type = modelKeyType.getOrElse("Long")
+        val templateProcessor = template(packageName, extension.mainJavaSrcDir) {
+            import("org.springframework.data.jpa.repository.JpaRepository")
+            import("${extension.basePackage}.${modelClassPath.get()}")
 
-        file.writeText("""
-            |package $packageName;
-            |import org.springframework.data.jpa.repository.JpaRepository;
-            |$modelImport
-            |
-            |public interface ${repositoryName.get()} extends JpaRepository<$modelClass, $type> {
-            |}
-        """.trimMargin())
+            classDef(repositoryName.get()) {
+                isInterface()
+                extend(
+                    classDef("JpaRepository") {
+                        type(
+                            classDef(getClassName(modelClassPath.get()))
+                        )
+
+                        type (
+                            classDef(modelKeyType.getOrElse("Long"))
+                        )
+                    }
+                )
+            }
+        }
+
+        createFile(templateProcessor)
     }
 }

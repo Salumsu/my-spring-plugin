@@ -1,6 +1,7 @@
 package com.salumsu.tasks
 
 import com.salumsu.MySpringPluginExtension
+import com.salumsu.lib.TemplateProcessor
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -55,5 +56,15 @@ abstract class BaseTask : DefaultTask() {
         file.createNewFile();
 
         return file;
+    }
+
+    fun createFile(templateProcessor: TemplateProcessor) {
+        val file = templateProcessor.getFile()
+        if (file.exists() && !overwrite.getOrElse(false)) {
+            println("Skipping ${file.name}, already exists. Pass --overwrite to overwrite.")
+            return;
+        }
+
+        templateProcessor.writeToFile(file)
     }
 }
