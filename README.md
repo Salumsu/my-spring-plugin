@@ -58,7 +58,7 @@ Scaffolds a JPA entity class.
 ```bash
 ./gradlew makeEntity --name=User
 ./gradlew makeEntity --name=User --lombok=true
-./gradlew makeEntity --name=User --path=domain/model
+./gradlew makeEntity --name=User --path=domain.model
 ```
 
 | Option | Description | Required |
